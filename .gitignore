@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data — large external CSVs only (demo_imdb.csv is small and committed)
+data/raw/IMDB_Dataset.csv
+data/raw/*.zip
+data/processed/
+
+# Models are intentionally committed so the project works out of the box.
+# Uncomment the line below only if models exceed 50 MB (use Git LFS instead).
+# models/*.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Generated outputs (regenerated on every run)
+outputs/plots/*.png
+outputs/reports/*.txt
