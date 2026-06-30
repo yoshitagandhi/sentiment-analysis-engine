@@ -24,11 +24,7 @@ NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 
 TESTS_DIR = PROJECT_ROOT / "tests"
 
-# =========================
-# Files
-# =========================
-
-DATASET_PATH = RAW_DATA_DIR / "demo_imdb.csv"
+DATASET_PATH = RAW_DATA_DIR / "imdb_dataset.csv"
 
 TFIDF_VECTORIZER = MODELS_DIR / "tfidf_vectorizer.pkl"
 
@@ -37,10 +33,6 @@ LOGISTIC_MODEL = MODELS_DIR / "logistic_regression.pkl"
 NAIVE_BAYES_MODEL = MODELS_DIR / "naive_bayes.pkl"
 
 LINEAR_SVM_MODEL = MODELS_DIR / "linear_svm.pkl"
-
-# =========================
-# Random State
-# =========================
 
 RANDOM_STATE = 42
 

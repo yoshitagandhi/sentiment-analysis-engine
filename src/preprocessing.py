@@ -22,6 +22,9 @@ nltk.download("stopwords", quiet=True)
 nltk.download("wordnet", quiet=True)
 
 STOPWORDS = set(stopwords.words("english"))
+STOPWORDS.discard("not")
+STOPWORDS.discard("no")
+STOPWORDS.discard("nor")
 LEMMATIZER = WordNetLemmatizer()
 
 
@@ -61,11 +64,23 @@ def preprocess_text(text: str) -> str:
 
     # Tokenize
     tokens = nltk.word_tokenize(text)
+    processed=[]
+    negate=False
+    for token in tokens:
+        if token in ["not", "no", "nor"]:
+            negate=True
+            processed.append(token)
+            continue
+        elif negate:
+            processed.append("not_"+token)
+            negate=False
+        else:
+            processed.append(token)
 
     # Stopword removal + Lemmatization
     tokens = [
-        LEMMATIZER.lemmatize(word)
-        for word in tokens
+        word
+        for word in processed
         if word not in STOPWORDS and len(word) > 1
     ]
 

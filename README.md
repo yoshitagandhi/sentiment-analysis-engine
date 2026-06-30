@@ -1,383 +1,323 @@
-# 🎬 Sentiment Analysis Engine
+<h1 align="center">🎬 Sentiment Analysis Engine</h1>
 
-### End-to-End NLP & Machine Learning · IMDB Movie Reviews · Production-Ready
+End-to-End NLP & Machine Learning · IMDB Movie Reviews · Production-Ready
 
-**Binary sentiment classifier** built on the IMDB Movie Reviews dataset.  
-Ships with a trained Logistic Regression, Naive Bayes, and Linear SVM —  
-plus a Streamlit web app, a FastAPI backend, and a Jupyter notebook walkthrough.
+**Binary sentiment classifier** built on the IMDB Movie Reviews dataset. Ships with a trained Logistic Regression, Naive Bayes, and Linear SVM — plus a Streamlit web app, a FastAPI backend, and a Jupyter notebook walkthrough.
 
 ---
 
-## 📌 What This Project Does
+## 📌 Table of Contents
 
-This system takes raw movie review text and predicts whether it expresses **positive** or **negative** sentiment — with a calibrated confidence score.
-
-```
-Input  → "The cinematography was breathtaking but the plot made no sense."
-Output → ❌ NEGATIVE  |  Confidence: 87.3%
-```
-
-The full pipeline handles everything automatically: HTML stripping, contraction expansion, negation handling, TF-IDF vectorisation, and multi-model inference. Drop in your own dataset and it retrains itself.
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Live Demo Walkthrough](#-live-demo-walkthrough)
+- [Pipeline Architecture](#-pipeline-architecture)
+- [Dataset](#-dataset)
+- [NLP Preprocessing](#-nlp-preprocessing)
+- [Feature Engineering](#-feature-engineering)
+- [Model Training](#-model-training)
+- [Results](#-results)
+- [Project Structure](#-project-structure)
+- [Installation & Usage](#-installation--usage)
+- [REST API](#-rest-api)
+- [Tech Stack](#-tech-stack)
+- [Future Improvements](#-future-improvements)
+- [Author](#-author)
 
 ---
 
-## ✨ Highlights
+## 🧠 Overview
 
-| Area | What's included |
+The **Sentiment Analysis Engine** is a complete, end-to-end Natural Language Processing system that classifies movie reviews as **Positive** or **Negative**. It was built to demonstrate the full ML product lifecycle that a real-world NLP system requires — not just a model in a notebook, but a packaged, deployable application:
+
+- **Data validation** — schema checks, deduplication, label normalization
+- **Text preprocessing** — a custom NLP cleaning pipeline with negation-aware tokenization
+- **Feature engineering** — TF-IDF vectorization tuned for sparse text data
+- **Model selection** — three classical ML algorithms trained and tuned with cross-validated grid search
+- **Evaluation** — precision/recall/F1, confusion matrices, and side-by-side model comparison
+- **Deployment** — an interactive Streamlit web app, a FastAPI REST service, and a multi-stage Docker build
+
+This project intentionally uses **classical, interpretable ML** (Logistic Regression, Naive Bayes, Linear SVM) rather than black-box deep learning — proving that with solid feature engineering, traditional methods can reach **~90% accuracy** on real-world sentiment data while staying fast, lightweight, and explainable.
+
+---
+
+## ✨ Key Features
+
+- 🔍 **Real-time single review prediction** with confidence scores and class probabilities
+- 📂 **Batch prediction** — upload a CSV of reviews and download predictions in bulk
+- 🤖 **Model comparison** — switch between Logistic Regression, Naive Bayes, and Linear SVM at inference time
+- 📊 **Built-in evaluation dashboard** — accuracy/precision/recall/F1 bar charts generated live from training output
+- 🧮 **Negation-aware preprocessing** — correctly distinguishes "good" from "not good" instead of stripping negation words as stopwords
+- 🎨 **Polished, custom-themed UI** built with Streamlit (dark mode, gradient hero banner, metric cards)
+- 🌐 **REST API** for programmatic / production integration via FastAPI
+- 🐳 **One-command Docker deployment** with a multi-stage build for a lean production image
+- 📈 **Reproducible training pipeline** — `python main.py` regenerates models, reports, and confusion matrices from scratch
+
+---
+
+## 🖥️ Live Demo Walkthrough
+
+### Prediction Workspace
+A clean dual-pane interface — paste a review on the left, get an instant verdict on the right.
+
+![Prediction Workspace](screenshots/prediction_workspace.png)
+
+### ✅ Positive Review
+
+> *"An outstanding film with brilliant performances, beautiful cinematography, and an unforgettable ending."*
+
+![Positive Prediction](screenshots/positive_prediction.png)
+
+### ❌ Negative Review
+
+> *"One of the worst movies I have ever seen. Poor acting, weak screenplay, and disappointing ending."*
+
+![Negative Prediction](screenshots/negative_prediction.png)
+
+### 🤔 Mixed / Nuanced Review
+
+The model handles genuinely ambiguous sentiment gracefully, returning a low-confidence, near 50/50 split instead of a falsely confident verdict:
+
+> *"The acting was great but the story was boring."*
+
+![Mixed Prediction](screenshots/mixed_prediction.png)
+
+---
+
+## 🏗️ Pipeline Architecture
+
+```
+┌──────────────┐    ┌───────────────┐    ┌──────────────┐    ┌─────────────┐    ┌────────────────┐
+│  Raw Review  │ →  │ Preprocessing │ →  │   TF-IDF     │ →  │  ML Model   │ →  │   Prediction    │
+│   (text)     │    │  (clean/lemma)│    │ Vectorizer   │    │ (LR/NB/SVM) │    │ + Confidence    │
+└──────────────┘    └───────────────┘    └──────────────┘    └─────────────┘    └────────────────┘
+                                                                                          │
+                                                                          ┌───────────────┴───────────────┐
+                                                                          │                                │
+                                                                  Streamlit Dashboard               FastAPI REST API
+                                                                  (interactive UI)                  (/predict, /predict/batch)
+```
+
+Each trained model is serialized as a single `scikit-learn` **Pipeline** object (`TfidfVectorizer` + classifier), so the exact same preprocessing and vectorization logic used in training is guaranteed at inference time — eliminating train/serve skew.
+
+---
+
+## 📊 Dataset
+
+| Property | Value |
 |---|---|
-| **NLP Pipeline** | 13-step preprocessing: HTML removal, contraction expansion, negation marking, lemmatisation |
-| **Feature Engineering** | TF-IDF with unigram + bigram extraction, configurable vocabulary, sparse-matrix optimised |
-| **Models** | Logistic Regression, Multinomial Naive Bayes, Linear SVM — trained, evaluated, and serialised |
-| **Evaluation** | Accuracy, Precision, Recall, F1, ROC-AUC · confusion matrices · ROC curves · feature importance |
-| **Interfaces** | Streamlit web app · FastAPI REST API · interactive Jupyter notebook · CLI |
-| **Deployment** | Dockerfile · docker-compose · Streamlit Cloud / Render / Railway ready |
-| **Code quality** | PEP 8 · type hints throughout · full docstrings · structured logging · reproducible seeds |
+| Source | IMDB Movie Reviews dataset |
+| Total reviews | 50,000 |
+| Class balance | 25,000 Positive / 25,000 Negative (perfectly balanced) |
+| Avg. review length | ~231 words (~1,309 characters) |
+| Review length range | 4 – 2,470 words |
+| Train / test split | 80% / 20% (stratified, `random_state=42`) |
+
+Balanced classes mean accuracy is a trustworthy headline metric here — but precision, recall, and F1 are tracked per-class regardless, to catch any asymmetric error patterns.
 
 ---
 
-## ⚡ Quick Start
+## 🧹 NLP Preprocessing
 
-```bash
-# 1. Clone
-git clone https://github.com/yourusername/sentiment-analysis-engine.git
-cd Sentiment-Analysis-Engine
+Implemented in `src/preprocessing.py`, the cleaning pipeline runs every review through:
 
-# 2. Install
-python -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+1. **Lowercasing** — normalizes case
+2. **HTML tag stripping** — IMDB reviews contain raw `<br />` tags
+3. **URL removal**
+4. **Punctuation & digit removal**
+5. **Tokenization** (NLTK)
+6. **Negation tagging** — `not`, `no`, and `nor` are preserved (not treated as stopwords) and the following token is prefixed, e.g. *"not good"* → `not good_x`, so the classifier learns negated phrases as distinct signals instead of losing the negation entirely
+7. **Stopword removal** — using NLTK's English stopword list, with negators explicitly excluded from removal
+8. **Lemmatization** — `WordNetLemmatizer` reduces words to their dictionary root form
 
-# 3. Train + evaluate (auto-generates demo data if no CSV present)
-python main.py
-
-# 4. Launch the web app
-streamlit run app/streamlit_app.py
-```
-
-> **No dataset download required.** A 2,000-review demo dataset is generated automatically on first run. To use the full IMDB dataset, drop your CSV into `data/raw/` — the pipeline detects it automatically.
+This negation-aware step is a deliberate design choice: naively removing "not" as a stopword (a common beginner mistake in sentiment pipelines) would cause *"not good"* and *"good"* to look identical to the model.
 
 ---
 
-## 🏗 Architecture
+## 🔢 Feature Engineering
 
-```
-Raw Review Text
-      │
-      ▼
-┌─────────────────────────────────────────┐
-│           NLP Preprocessing             │
-│  lowercase → expand contractions →      │
-│  strip HTML/URLs → remove noise →       │
-│  tokenise → drop stopwords →            │
-│  negation marking → lemmatise           │
-└──────────────────┬──────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────┐
-│         TF-IDF Vectorisation            │
-│  vocab: 15,000 · ngrams: (1,2)          │
-│  min_df=2 · max_df=0.95 · sublinear_tf  │
-│  sparse matrix output                   │
-└──────────────────┬──────────────────────┘
-                   │
-       ┌───────────┼───────────┐
-       ▼           ▼           ▼
-  Logistic     Naive        Linear
- Regression    Bayes         SVM
-       │           │           │
-       └───────────┴───────────┘
-                   │
-                   ▼
-        POSITIVE ✅ / NEGATIVE ❌
-        Confidence score · Probabilities
-```
-
-**File → responsibility mapping:**
-
-```
-main.py                    Orchestrator — runs the full pipeline
-src/data_loader.py         Load, validate, EDA (6 visualisations)
-src/preprocessing.py       13-step NLP cleaning pipeline
-src/feature_engineering.py TF-IDF fitting, transform, feature analysis
-src/train.py               Stratified split, train all models, save .pkl
-src/evaluate.py            Metrics, confusion matrices, ROC curves
-src/predict.py             SentimentPredictor class — inference engine
-src/utils.py               Logging, timing, seeding, path helpers
-app/streamlit_app.py       Interactive web UI (single + batch + examples)
-app/api.py                 FastAPI backend — /predict /predict/batch /health
-```
-
----
-
-## 📊 Model Results
-
-Evaluated on a stratified 80/20 holdout split. Expected performance on the full 50k IMDB dataset:
-
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | Train time |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Logistic Regression** | **0.889** | **0.892** | **0.887** | **0.889** | **0.965** | ~2s |
-| Linear SVM | 0.882 | 0.887 | 0.878 | 0.882 | 0.960 | ~18s |
-| Multinomial Naive Bayes | 0.864 | 0.870 | 0.858 | 0.864 | 0.948 | ~0.8s |
-
-> Logistic Regression is set as the default model — best F1 + fastest inference + interpretable coefficients.
-
-<details>
-<summary>📈 View evaluation plots</summary>
-
-**ROC Curves**
-Compares all three models across every probability threshold. All models exceed AUC 0.94.
-
-**Confusion Matrices**
-Normalised per-class accuracy for each model — lets you see exactly where false positives and false negatives occur.
-
-**Feature Coefficients**
-The top 20 words driving POSITIVE and NEGATIVE predictions — direct interpretability from Logistic Regression weights.
-
-**Model Comparison**
-Side-by-side bar chart of all five metrics across all three models.
-
-All plots are auto-generated to `outputs/plots/` on every training run.
-</details>
-
----
-
-## 🔧 NLP Preprocessing Pipeline
-
-Raw text goes through 13 sequential steps before vectorisation:
+Text is converted into numerical features using **TF-IDF (Term Frequency–Inverse Document Frequency)**, configured in the training pipeline as:
 
 ```python
-"I can't believe how <b>AMAZING</b> this film was!! 😍"
-      │
-      ▼  expand contractions      → "I cannot believe how <b>AMAZING</b> this film was!! 😍"
-      ▼  strip HTML               → "I cannot believe how AMAZING this film was!!  "
-      ▼  lowercase                → "i cannot believe how amazing this film was!!  "
-      ▼  remove URLs / emojis     → "i cannot believe how amazing this film was!!  "
-      ▼  remove punctuation       → "i cannot believe how amazing this film was"
-      ▼  tokenise                 → ["i", "cannot", "believe", "how", "amazing", "this", "film", "was"]
-      ▼  drop stopwords           → ["cannot", "believe", "amazing", "film"]
-      ▼  negation handling        → ["cannot", "believe_NEG", "amazing_NEG", "film_NEG"]
-      ▼  lemmatise                → ["cannot", "believe_NEG", "amazing_NEG", "film_NEG"]
-      │
-      ▼
-"cannot believe_NEG amazing_NEG film_NEG"
+TfidfVectorizer(
+    lowercase=True,
+    strip_accents="unicode",
+    max_features=20000,
+    ngram_range=(1, 2),     # unigrams + bigrams
+    min_df=3,                # ignore terms in fewer than 3 documents
+    max_df=0.90,              # ignore terms in over 90% of documents
+    sublinear_tf=True,        # log-scaled term frequency
+)
 ```
 
-> Negation marking is a design decision that preserves the semantic inversion of "cannot believe" — "believe_NEG" is treated as a distinct, negative feature by the vectoriser rather than accidentally contributing a positive "believe" signal.
+Bigrams allow the model to capture short phrases like *"not great"* or *"highly recommend"* that unigrams alone would miss.
 
 ---
 
-## 📁 Project Structure
+## 🤖 Model Training
+
+Three classical ML algorithms are trained and tuned via **5-fold `GridSearchCV`** (in `src/trainer.py`):
+
+| Model | Algorithm Type | Hyperparameters Tuned |
+|---|---|---|
+| **Logistic Regression** | Linear classifier | `C ∈ {0.1, 1, 10}`, `solver="liblinear"` |
+| **Multinomial Naive Bayes** | Probabilistic classifier | `alpha ∈ {0.1, 0.5, 1.0}` |
+| **Linear SVM** (calibrated) | Max-margin classifier | `C ∈ {0.1, 1, 10}` (via `CalibratedClassifierCV` for probability outputs) |
+
+Each model is wrapped in a `scikit-learn Pipeline` alongside its TF-IDF vectorizer, trained on the 80% split, and evaluated on the held-out 20% test set (9,917 reviews). Trained pipelines are serialized with `joblib` to `models/`, and reports/confusion matrices are written to `outputs/`.
+
+---
+
+## 📈 Results
+
+| Model | Accuracy | Precision | Recall | F1-Score |
+|---|:---:|:---:|:---:|:---:|
+| **Logistic Regression** | **90.05%** | 90.06% | 90.05% | 90.05% |
+| **Linear SVM** | **90.05%** | 90.05% | 90.05% | 90.05% |
+| Multinomial Naive Bayes | 88.01% | 88.03% | 88.01% | 88.01% |
+
+*(Metrics computed on a 9,917-review held-out test set. Full per-class classification reports are in `outputs/`.)*
+
+### In-App Evaluation Dashboard
+
+The Streamlit app includes a live evaluation dashboard that reads `outputs/model_comparison.csv` and renders accuracy/precision/recall/F1 comparison charts on demand — no need to dig through CSVs manually.
+
+---
+
+## 📂 Project Structure
 
 ```
-Sentiment-Analysis-Engine/
-│
-├── main.py                      # CLI entry point — full pipeline
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-│
-├── src/
-│   ├── utils.py                 # Logging, timing, reproducibility
-│   ├── data_loader.py           # Load, validate, EDA
-│   ├── preprocessing.py         # 13-step NLP pipeline
-│   ├── feature_engineering.py   # TF-IDF vectoriser
-│   ├── train.py                 # Model training + serialisation
-│   ├── evaluate.py              # Metrics + all visualisations
-│   └── predict.py               # Inference engine
-│
+sentiment-analysis-engine/
 ├── app/
-│   ├── streamlit_app.py         # Web UI
-│   └── api.py                   # FastAPI backend
-│
-├── notebooks/
-│   └── experimentation.ipynb   # Full interactive walkthrough
-│
-├── data/
-│   ├── raw/                     # Place IMDB CSV here
-│   └── processed/
-│
-├── models/                      # Serialised .pkl artifacts
-│   ├── logistic_regression.pkl
-│   ├── naive_bayes.pkl
-│   ├── linear_svm.pkl
-│   └── tfidf_vectorizer.pkl
-│
-└── outputs/
-    ├── plots/                   # 11 auto-generated PNGs
-    └── reports/
-        └── model_metrics.txt
+│   ├── streamlit_app.py         # Main interactive dashboard (prediction + batch UI)
+│   ├── evaluation_dashboard.py  # Live model comparison charts
+│   ├── components.py            # Reusable UI components (hero banner, stat cards)
+│   ├── styles.py                # Custom CSS theming
+│   └── api.py                   # FastAPI REST backend
+├── src/
+│   ├── config.py                 # Centralized paths & constants
+│   ├── data_loader.py            # Dataset loading, validation, deduplication
+│   ├── preprocessing.py          # Text cleaning, negation handling, lemmatization
+│   ├── feature_engineering.py    # TF-IDF vectorization
+│   ├── trainer.py                # Training, hyperparameter tuning & evaluation pipeline
+│   ├── evaluation.py             # Metrics & reporting utilities
+│   ├── predictor.py              # Inference wrapper for trained model pipelines
+│   └── utils.py                  # Logging, pickling, timing helpers
+├── data/raw/imdb_dataset.csv     # 50,000-review IMDB dataset
+├── models/                       # Trained pipelines (.pkl) — vectorizer + classifier bundled
+├── outputs/                      # Classification reports, confusion matrices, comparison CSV
+├── notebooks/experimentation.ipynb  # EDA & prototyping notebook
+├── screenshots/                  # App UI screenshots (used in this README)
+├── main.py                       # Entry point — trains all models end-to-end
+├── requirements.txt
+├── Dockerfile                    # Multi-stage build
+└── docker-compose.yml            # Streamlit + API services
 ```
 
 ---
 
-## 🖥 Usage
+## ⚙️ Installation & Usage
 
-### Command line
+### Prerequisites
+- Python 3.11+
+- pip
+
+### 1. Clone & install
 
 ```bash
-# Full pipeline — load data, preprocess, train, evaluate, demo predictions
+git clone https://github.com/yoshitagandhi/sentiment-analysis-engine.git
+cd sentiment-analysis-engine
+pip install -r requirements.txt
+```
+
+### 2. Train the models
+
+```bash
 python main.py
-
-# Training only (skip evaluation charts)
-python main.py --train-only
-
-# Use a specific CSV
-python main.py --csv data/raw/IMDB_Dataset.csv
-
-# Interactive prediction loop
-python main.py --predict
-
-# Quick demo on hardcoded examples
-python main.py --demo
 ```
 
-### Python API
+This loads the dataset, preprocesses all 50,000 reviews, trains and tunes all three models with grid search, and writes trained pipelines to `models/` plus evaluation reports to `outputs/`.
 
-```python
-from src.predict import SentimentPredictor
-
-predictor = SentimentPredictor()                          # loads model + vectoriser from disk
-result    = predictor.predict("This film was incredible!")
-
-print(result["sentiment"])        # POSITIVE
-print(result["confidence_pct"])   # 97.4%
-print(result["probabilities"])    # {"positive": 0.974, "negative": 0.026}
-```
-
-```python
-# Batch prediction — vectorised in one pass, much faster than looping
-reviews = ["Absolute masterpiece.", "Boring and predictable.", "Not bad, actually."]
-results = predictor.predict_batch(reviews)
-```
-
-### Streamlit web app
+### 3. Launch the dashboard
 
 ```bash
 streamlit run app/streamlit_app.py
-# → http://localhost:8501
 ```
 
-Three tabs: **Single prediction** with confidence gauge · **Batch analysis** with summary chart · **Example reviews** to try instantly.
+Open `http://localhost:8501` to analyze reviews, run batch predictions on a CSV, and view the evaluation dashboard.
+
+### 4. Or run everything with Docker
+
+```bash
+docker-compose up --build
+```
+
+| Service | URL |
+|---|---|
+| Streamlit dashboard | `http://localhost:8501` |
+| FastAPI service | `http://localhost:8000` |
 
 ---
 
-## 🔗 REST API
+## 🌐 REST API
 
-```bash
-uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
-# Interactive docs → http://localhost:8000/docs
-```
+The FastAPI backend (`app/api.py`) exposes a production-style HTTP interface for programmatic access:
 
-**`POST /predict`**
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check for monitoring / load balancers |
+| `POST` | `/predict` | Single review prediction with confidence + probabilities |
+| `POST` | `/predict/batch` | Batch prediction (up to 500 reviews per request) |
+
+**Example request:**
+
 ```bash
 curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"review": "One of the finest films I have ever seen."}'
-```
-```json
-{
-  "review":         "One of the finest films I have ever seen.",
-  "prediction":     "positive",
-  "confidence":     0.9814,
-  "confidence_pct": "98.1%",
-  "probabilities":  { "positive": 0.9814, "negative": 0.0186 },
-  "model":          "logistic_regression"
-}
+     -H "Content-Type: application/json" \
+     -d '{"review": "This movie was fantastic!", "model": "logistic_regression"}'
 ```
 
-**`POST /predict/batch`** — up to 500 reviews per request  
-**`GET  /health`** — liveness check for load balancers / monitoring
+> ⚠️ **Note:** the API module currently has a couple of stale internal imports (`src.predict` / `get_logger`) left over from a refactor — they need to be pointed at the existing `src.predictor.SentimentPredictor` and `src.utils.setup_logger` before the API service will run. The endpoint contracts above reflect the intended design.
 
 ---
 
-## 🚀 Deployment
+## 🛠️ Tech Stack
 
-### Docker (recommended)
-
-```bash
-# Build and run both Streamlit + API in parallel
-docker-compose up --build
-
-# Streamlit → http://localhost:8501
-# FastAPI   → http://localhost:8000
-```
-
-### One-command cloud deploy
-
-| Platform | Steps |
+| Category | Tools |
 |---|---|
-| **Streamlit Cloud** | Push to GitHub → [share.streamlit.io](https://share.streamlit.io) → connect repo → deploy |
-| **Render** | New Web Service → connect repo → build: `pip install -r requirements.txt` → start: `streamlit run app/streamlit_app.py` |
-| **Railway** | Connect GitHub → auto-detect → deploy |
-| **Hugging Face Spaces** | New Space → Streamlit runtime → push code |
+| **Language** | Python 3.11 |
+| **ML / NLP** | scikit-learn, NLTK |
+| **Data Handling** | pandas, NumPy |
+| **Visualization** | Matplotlib, Seaborn, Plotly |
+| **Web App** | Streamlit |
+| **API** | FastAPI, Uvicorn, Pydantic |
+| **Deployment** | Docker, Docker Compose (multi-stage build) |
+| **Experimentation** | Jupyter Notebook |
 
 ---
 
-## 🧪 Reproducing from Scratch
+## 🔮 Future Improvements
 
-Everything needed to go from zero to trained models:
-
-```bash
-# 1. Create environment
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-
-# 2. (Optional) Place the full IMDB CSV in data/raw/
-#    If you skip this, a 2,000-review demo set is auto-generated.
-
-# 3. Run the full pipeline
-python main.py
-
-# 4. Inspect outputs
-ls outputs/plots/          # 11 visualisation PNGs
-cat outputs/reports/model_metrics.txt
-
-# 5. Launch interfaces
-streamlit run app/streamlit_app.py
-uvicorn app.api:app --reload
-```
+| Enhancement | Description |
+|---|---|
+| **Transformer models** | Fine-tune BERT / DistilBERT for higher accuracy on nuanced reviews |
+| **Ensemble methods** | Combine Logistic Regression, SVM, and Naive Bayes via soft voting |
+| **Aspect-based sentiment** | Score sentiment per aspect (acting, plot, visuals) instead of one overall label |
+| **Sarcasm detection** | Handle ironic or sarcastic phrasing that confuses lexical models |
+| **Multilingual support** | Extend beyond English-language reviews |
+| **Cloud deployment** | Ship the FastAPI service to AWS / GCP / Render with CI/CD |
 
 ---
 
-## 🗺 Roadmap
+## 🙋 Author
 
-- [ ] Hyperparameter tuning via `GridSearchCV` / Optuna
-- [ ] Ensemble voting across all three models
-- [ ] DistilBERT fine-tuned classifier (transformer upgrade path)
-- [ ] Aspect-based sentiment — per-dimension scoring (acting, plot, visuals)
-- [ ] Live Twitter / Reddit sentiment dashboard
-- [ ] Multi-language support via multilingual BERT
-- [ ] Prediction logging + retraining pipeline
+**Yoshita Gandhi**
+B.Tech, Artificial Intelligence & Data Science — Guru Gobind Singh Indraprastha University
 
----
-
-## 📚 Documentation
-
-A full **beginner-to-advanced explanation** of the project is available separately:
-
-📄 `Sentiment_Analysis_Engine_COMPLETE_EXPLANATION.md` — covers every file, every concept, end-to-end prediction tracing, interview Q&A, and a 5-day learning plan. Written for someone with zero ML background. Add this file to the repo root to make it browsable on GitHub.
-
----
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create a feature branch — `git checkout -b feature/my-improvement`
-3. Commit — `git commit -m "Add: my improvement"`
-4. Push — `git push origin feature/my-improvement`
-5. Open a Pull Request
-
-Issues and suggestions welcome.
+[![GitHub](https://img.shields.io/badge/GitHub-yoshitagandhi-181717?style=flat&logo=github&logoColor=white)](https://github.com/yoshitagandhi)
 
 ---
 
 ## 📄 License
 
-MIT — free to use, modify, and distribute.
-
----
-
-<div align="center">
-
-Built with Python · NLTK · scikit-learn · Streamlit · FastAPI
-
-</div>
+This project is licensed under the MIT License.
